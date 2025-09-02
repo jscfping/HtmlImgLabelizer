@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>HtmlImgLabelizer</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+    <style>
+        .image-container {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+
+        canvas {
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <h1>HtmlImgLabelizer</h1>
+        <input type="file" multiple @change="onFileBtnFilesChanged">
+        <button @click="exportZip">Export yolo labels</button>
+        <hr>
+
+        <div v-for="(img, index) in images" :key="index">
+            <div class="image-container">
+                <canvas :ref="'canvas'+index" :width="img.width" :height="img.height"
+                    @mousedown="startDraw($event, index)" @mouseup="endDraw($event, index)"></canvas>
+                {{ img.name }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, nextTick } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    images: [],   // {name, width, height, md5, file, labels:[]}
+                    currentDraw: null,
+                    currentLabel: null,
+                    classes: ["apple", "banana"]
+                }
+            },
+            methods: {
+                onFileBtnFilesChanged(event) {
+                    const files = event.target.files;
+                    this.addImages(files);
+                },
+                addImages(files) {
+                    for (let file of files) {
+                        if (!file.type.startsWith("image/")) continue;
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const md5sum = md5(e.target.result);
+                                this.images.push({
+                                    name: file.name,
+                                    width: img.width,
+                                    height: img.height,
+                                    md5: md5sum,
+                                    file: file,
+                                    labels: [],
+                                    imgElement: img
+                                });
+                                nextTick(() => this.drawImage(this.images.length - 1));
+                            };
+                            img.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+                drawImage(index) {
+                    const canvas = this.$refs["canvas" + index][0];
+                    const ctx = canvas.getContext("2d");
+                    const img = this.images[index].imgElement;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    // draw labels
+                    for (let label of this.images[index].labels) {
+                        this.drawBox(ctx, label);
+                    }
+                },
+                drawBox(ctx, label) {
+                    const color = label.name === "apple" ? "red" : "orange";
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    const x = Math.min(label.x0, label.x1);
+                    const y = Math.min(label.y0, label.y1);
+                    const w = Math.abs(label.x1 - label.x0);
+                    const h = Math.abs(label.y1 - label.y0);
+                    ctx.strokeRect(x, y, w, h);
+                    ctx.fillStyle = color;
+                    ctx.font = "16px Arial";
+                    ctx.fillText(label.name, x + 2, y + 16);
+                },
+                startDraw(event, index) {
+                    const rect = event.target.getBoundingClientRect();
+                    this.currentDraw = {
+                        index,
+                        x0: event.clientX - rect.left,
+                        y0: event.clientY - rect.top
+                    };
+                },
+                endDraw(event, index) {
+                    if (this.currentDraw && this.currentDraw.index === index && this.currentLabel) {
+                        const rect = event.target.getBoundingClientRect();
+                        const x1 = event.clientX - rect.left;
+                        const y1 = event.clientY - rect.top;
+                        this.addLabel(index, this.currentLabel, this.currentDraw.x0, x1, this.currentDraw.y0, y1);
+                        this.currentDraw = null;
+                        this.currentLabel = null;
+                        this.drawImage(index);
+                    }
+                },
+                addLabel(index, name, x0, x1, y0, y1) {
+                    this.images[index].labels.push({ name, x0, x1, y0, y1 });
+                },
+                handleKey(event) {
+                    if (event.key === "1") this.currentLabel = "apple";
+                    if (event.key === "2") this.currentLabel = "banana";
+                },
+                async exportZip() {
+                    const zip = new JSZip();
+                    const dataJson = [];
+                    for (let img of this.images) {
+                        const txtLines = [];
+                        for (let label of img.labels) {
+                            const x_center = ((label.x0 + label.x1) / 2) / img.width;
+                            const y_center = ((label.y0 + label.y1) / 2) / img.height;
+                            const w = Math.abs(label.x1 - label.x0) / img.width;
+                            const h = Math.abs(label.y1 - label.y0) / img.height;
+                            const classId = this.classes.indexOf(label.name);
+                            txtLines.push(`${classId} ${x_center.toFixed(6)} ${y_center.toFixed(6)} ${w.toFixed(6)} ${h.toFixed(6)}`);
+                        }
+                        zip.file(img.name.replace(/\.[^/.]+$/, ".txt"), txtLines.join("\n"));
+                        dataJson.push({
+                            imgName: img.name,
+                            width: img.width,
+                            height: img.height,
+                            md5: img.md5,
+                            labels: img.labels
+                        });
+                    }
+                    zip.file("data.json", JSON.stringify(dataJson, null, 2));
+                    const content = await zip.generateAsync({ type: "blob" });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(content);
+                    a.download = "labels.zip";
+                    a.click();
+                }
+            },
+            mounted() {
+                window.addEventListener("keydown", this.handleKey);
+            },
+            beforeUnmount() {
+                window.removeEventListener("keydown", this.handleKey);
+            }
+        }).mount("#app");
+    </script>
+
+</body>
+
+</html>
