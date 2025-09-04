@@ -1,6 +1,6 @@
 
 
-# HtmlImgLabelizer
+# [HtmlImgLabelizer](https://jscfping.github.io/HtmlImgLabelizer)
 
 This project is a simple HTML tool for annotating images and exporting labels.
 
