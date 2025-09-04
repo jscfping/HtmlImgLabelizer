@@ -115,8 +115,6 @@
                         const x1 = event.clientX - rect.left;
                         const y1 = event.clientY - rect.top;
                         this.addLabel(index, this.currentLabel, this.currentDraw.x0, x1, this.currentDraw.y0, y1);
-                        this.currentDraw = null;
-                        this.currentLabel = null;
                         this.drawImage(index);
                     }
                 },
