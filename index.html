@@ -45,7 +45,16 @@
                     images: [],   // {name, width, height, md5, file, labels:[]}
                     currentDraw: null,
                     currentLabel: null,
-                    classes: ["apple", "banana"]
+                    classes: ["apple", "banana"],
+                    colors: [
+                        "red",
+                        "orange",
+                        "yellow",
+                        "green",
+                        "blue",
+                        "indigo",
+                        "violet"
+                    ]
                 }
             },
             methods: {
@@ -89,7 +98,7 @@
                     }
                 },
                 drawBox(ctx, label) {
-                    const color = label.name === "apple" ? "red" : "orange";
+                    const color = this.colors[this.classes.indexOf(label.name) % this.colors.length];
                     ctx.strokeStyle = color;
                     ctx.lineWidth = 2;
                     const x = Math.min(label.x0, label.x1);
