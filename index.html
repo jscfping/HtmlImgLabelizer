@@ -9,9 +9,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
     <style>
         .image-container {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .image-wrapper {
             position: relative;
             display: inline-block;
-            margin: 10px;
+        }
+
+        .image-info {
+            margin-left: 20px;
+            font-size: 14px;
         }
 
         canvas {
@@ -27,13 +37,21 @@
         <button @click="exportZip">Export yolo labels</button>
         <hr>
 
-        <div v-for="(img, index) in images" :key="index">
-            <div class="image-container">
-                <canvas :ref="'canvas'+index" :width="img.width" :height="img.height"
-                    @mousedown="startDraw($event, index)" @mouseup="endDraw($event, index)"></canvas>
-                {{ img.name }} <input type="button" value="Reset Labels" @click="resetLabels(index)">
+        <div v-for="(img, index) in images" :key="index" class="image-container">
+            <div class="image-wrapper">
+
+                <canvas :ref="'canvasResult'+index" :width="img.width" :height="img.height"></canvas>
+
+                <canvas :ref="'canvasPreview'+index" :width="img.width" :height="img.height"
+                    style="position: absolute; top:0; left:0;" @mousedown="startPreview($event, index)"
+                    @mousemove="updatePreview($event, index)" @mouseup="endDraw($event, index)"></canvas>
+            </div>
+            <div class="image-info">
+                <div>{{ img.name }}</div>
+                <input type="button" value="Reset Labels" @click="resetLabels(index)">
             </div>
         </div>
+
     </div>
 
     <script>
@@ -42,9 +60,9 @@
         createApp({
             data() {
                 return {
-                    images: [],   // {name, width, height, md5, file, labels:[]}
-                    currentDraw: null,
-                    currentLabel: null,
+                    images: [],   // {name, width, height, md5, file, labels:[], imgElement}
+                    currentLabelName: null,
+                    previewBox: null,  // {index, x0, y0, x1, y1}
                     classes: ["apple", "banana"],
                     colors: [
                         "red",
@@ -79,64 +97,95 @@
                                     labels: [],
                                     imgElement: img
                                 });
-                                nextTick(() => this.drawImage(this.images.length - 1));
+                                nextTick(() => this.drawLabels(this.images.length - 1));
                             };
                             img.src = e.target.result;
                         };
                         reader.readAsDataURL(file);
                     }
                 },
-                drawImage(index) {
-                    const canvas = this.$refs["canvas" + index][0];
+                drawLabels(index) {
+                    const canvas = this.$refs["canvasResult" + index][0];
                     const ctx = canvas.getContext("2d");
                     const img = this.images[index].imgElement;
+
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0);
-                    // draw labels
+
                     for (let label of this.images[index].labels) {
-                        this.drawBox(ctx, label);
+                        ctx.strokeStyle = this.getLabelColor(label.name);
+                        ctx.lineWidth = 2;
+
+                        const x = Math.min(label.x0, label.x1);
+                        const y = Math.min(label.y0, label.y1);
+                        const w = Math.abs(label.x1 - label.x0);
+                        const h = Math.abs(label.y1 - label.y0);
+
+                        ctx.strokeRect(x, y, w, h);
+
+                        ctx.fillStyle = this.getLabelColor(label.name);
+                        ctx.font = "16px Arial";
+                        ctx.fillText(label.name, x + 2, y + 16);
                     }
                 },
-                drawBox(ctx, label) {
-                    const color = this.colors[this.classes.indexOf(label.name) % this.colors.length];
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = 2;
-                    const x = Math.min(label.x0, label.x1);
-                    const y = Math.min(label.y0, label.y1);
-                    const w = Math.abs(label.x1 - label.x0);
-                    const h = Math.abs(label.y1 - label.y0);
-                    ctx.strokeRect(x, y, w, h);
-                    ctx.fillStyle = color;
-                    ctx.font = "16px Arial";
-                    ctx.fillText(label.name, x + 2, y + 16);
+                getLabelColor(labelName) {
+                    return this.colors[this.classes.indexOf(labelName) % this.colors.length];
                 },
-                startDraw(event, index) {
+                drawPreview(index, box) {
+                    const canvas = this.$refs["canvasPreview" + index][0];
+                    const ctx = canvas.getContext("2d");
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    if (!box || !this.currentLabelName) return;
+
+                    const { x0, y0, x1, y1 } = box;
+                    const x = Math.min(x0, x1);
+                    const y = Math.min(y0, y1);
+                    const w = Math.abs(x1 - x0);
+                    const h = Math.abs(y1 - y0);
+
+                    const color = this.getLabelColor(this.currentLabelName);
+
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([6, 3]);
+                    ctx.strokeRect(x, y, w, h);
+                    ctx.setLineDash([]);
+                },
+                startPreview(event, index) {
+                    if (!this.currentLabelName) return;
                     const rect = event.target.getBoundingClientRect();
-                    this.currentDraw = {
-                        index,
-                        x0: event.clientX - rect.left,
-                        y0: event.clientY - rect.top
-                    };
+                    const x0 = event.clientX - rect.left;
+                    const y0 = event.clientY - rect.top;
+                    this.previewBox = { index, x0, y0, x1: x0, y1: y0 };
+                },
+                updatePreview(event, index) {
+                    if (!this.currentLabelName) return;
+                    if (!this.previewBox || this.previewBox.index !== index) return;
+                    const rect = event.target.getBoundingClientRect();
+                    this.previewBox.x1 = event.clientX - rect.left;
+                    this.previewBox.y1 = event.clientY - rect.top;
+                    this.drawPreview(index, this.previewBox);
                 },
                 endDraw(event, index) {
-                    if (this.currentDraw && this.currentDraw.index === index && this.currentLabel) {
-                        const rect = event.target.getBoundingClientRect();
-                        const x1 = event.clientX - rect.left;
-                        const y1 = event.clientY - rect.top;
-                        this.addLabel(index, this.currentLabel, this.currentDraw.x0, x1, this.currentDraw.y0, y1);
-                        this.drawImage(index);
+                    if (this.previewBox && this.previewBox.index === index && this.currentLabelName) {
+                        const { x0, y0, x1, y1 } = this.previewBox;
+                        this.addLabel(index, this.currentLabelName, x0, x1, y0, y1);
+                        this.drawLabels(index);
                     }
+                    this.previewBox = null;
+                    this.drawPreview(index, null);
                 },
                 addLabel(index, name, x0, x1, y0, y1) {
                     this.images[index].labels.push({ name, x0, x1, y0, y1 });
                 },
                 resetLabels(index) {
                     this.images[index].labels = [];
-                    this.drawImage(index);
+                    this.drawLabels(index);
                 },
                 handleKey(event) {
-                    if (event.key === "1") this.currentLabel = "apple";
-                    if (event.key === "2") this.currentLabel = "banana";
+                    if (event.key === "1") this.currentLabelName = "apple";
+                    if (event.key === "2") this.currentLabelName = "banana";
                 },
                 async exportZip() {
                     const zip = new JSZip();
@@ -176,7 +225,6 @@
             }
         }).mount("#app");
     </script>
-
 </body>
 
 </html>
