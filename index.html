@@ -23,35 +23,31 @@
             margin-left: 20px;
             font-size: 14px;
         }
-
-        canvas {
-            border: 1px solid #333;
-        }
     </style>
 </head>
 
 <body>
     <div id="app">
-        <h1>HtmlImgLabelizer</h1>
-        <input type="file" multiple @change="onFileBtnFilesChanged">
-        <button @click="exportZip">Export yolo labels</button>
-        <hr>
+        <div>
+            <h1>HtmlImgLabelizer</h1>
+            <input type="file" multiple @change="onFileBtnFilesChanged">
+            <button @click="exportZip">Export yolo labels</button>
+            <hr>
 
-        <div v-for="(img, index) in images" :key="index" class="image-container">
-            <div class="image-wrapper">
+            <div v-for="(img, index) in images" :key="index" class="image-container">
+                <div class="image-wrapper">
 
-                <canvas :ref="'canvasResult'+index" :width="img.width" :height="img.height"></canvas>
+                    <canvas :ref="'canvasResult'+index" :width="img.width" :height="img.height"></canvas>
 
-                <canvas :ref="'canvasPreview'+index" :width="img.width" :height="img.height"
-                    style="position: absolute; top:0; left:0;" @mousedown="startPreview($event, index)"
-                    @mousemove="updatePreview($event, index)" @mouseup="endDraw($event, index)"></canvas>
-            </div>
-            <div class="image-info">
-                <div>{{ img.name }}</div>
-                <input type="button" value="Reset Labels" @click="resetLabels(index)">
+                    <canvas :ref="'canvasPreview'+index" :width="img.width" :height="img.height"
+                        style="position: absolute; top:0; left:0;" @mousedown="startPreview($event, index)"></canvas>
+                </div>
+                <div class="image-info">
+                    <div>{{ img.name }}</div>
+                    <input type="button" value="Reset Labels" @click="resetLabels(index)">
+                </div>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -62,7 +58,8 @@
                 return {
                     images: [],   // {name, width, height, md5, file, labels:[], imgElement}
                     currentLabelName: null,
-                    previewBox: null,  // {index, x0, y0, x1, y1}
+                    previewImageIdx: null,
+                    previewBox: null,  // { index, x0, y0, x1, y1, rect, canvas }
                     classes: ["apple", "banana"],
                     colors: [
                         "red",
@@ -154,30 +151,52 @@
                 },
                 startPreview(event, index) {
                     if (!this.currentLabelName) return;
-                    const rect = event.target.getBoundingClientRect();
-                    const x0 = event.clientX - rect.left;
-                    const y0 = event.clientY - rect.top;
-                    this.previewBox = { index, x0, y0, x1: x0, y1: y0 };
+                    this.previewImageIdx = index;
+
+                    const canvas = this.$refs["canvasPreview" + index][0];
+                    const rect = canvas.getBoundingClientRect();
+
+                    const x0 = Math.floor(event.clientX - rect.left);
+                    const y0 = Math.floor(event.clientY - rect.top);
+
+                    this.previewBox = { index, x0, y0, x1: x0, y1: y0, rect, canvas };
                 },
-                updatePreview(event, index) {
+                updatePreview(event) {
                     if (!this.currentLabelName) return;
-                    if (!this.previewBox || this.previewBox.index !== index) return;
-                    const rect = event.target.getBoundingClientRect();
-                    this.previewBox.x1 = event.clientX - rect.left;
-                    this.previewBox.y1 = event.clientY - rect.top;
-                    this.drawPreview(index, this.previewBox);
+                    if (!this.previewBox || !(this.previewImageIdx >= 0)) return;
+
+                    const { rect, canvas } = this.previewBox;
+
+                    let x = event.clientX - rect.left;
+                    let y = event.clientY - rect.top;
+
+                    x = Math.max(0, Math.min(Math.floor(x), canvas.width));
+                    y = Math.max(0, Math.min(Math.floor(y), canvas.height));
+
+                    this.previewBox.x1 = x;
+                    this.previewBox.y1 = y;
+
+                    this.drawPreview(this.previewImageIdx, this.previewBox);
                 },
-                endDraw(event, index) {
-                    if (this.previewBox && this.previewBox.index === index && this.currentLabelName) {
-                        const { x0, y0, x1, y1 } = this.previewBox;
-                        this.addLabel(index, this.currentLabelName, x0, x1, y0, y1);
-                        this.drawLabels(index);
-                    }
+                endDraw(event) {
+                    if (!this.previewBox || !this.currentLabelName || !(this.previewImageIdx >= 0)) return;
+
+                    const { x0, y0, x1, y1 } = this.previewBox;
+
+                    const minX = Math.min(x0, x1);
+                    const minY = Math.min(y0, y1);
+                    const maxX = Math.max(x0, x1);
+                    const maxY = Math.max(y0, y1);
+
+                    this.addLabel(this.previewImageIdx, this.currentLabelName, minX, minY, maxX, maxY);
+                    this.drawLabels(this.previewImageIdx);
+                    this.drawPreview(this.previewImageIdx, null);
+
                     this.previewBox = null;
-                    this.drawPreview(index, null);
                 },
-                addLabel(index, name, x0, x1, y0, y1) {
-                    this.images[index].labels.push({ name, x0, x1, y0, y1 });
+                addLabel(index, name, x0, y0, x1, y1) {
+                    this.images[index].labels.push({ name, x0, y0, x1, y1 });
+                    console.log(x0, y0, x1, y1);
                 },
                 resetLabels(index) {
                     this.images[index].labels = [];
@@ -219,9 +238,13 @@
             },
             mounted() {
                 window.addEventListener("keydown", this.handleKey);
+                window.addEventListener("mousemove", this.updatePreview);
+                window.addEventListener("mouseup", this.endDraw);
             },
             beforeUnmount() {
                 window.removeEventListener("keydown", this.handleKey);
+                window.removeEventListener("mousemove", this.updatePreview);
+                window.removeEventListener("mouseup", this.endDraw);
             }
         }).mount("#app");
     </script>
