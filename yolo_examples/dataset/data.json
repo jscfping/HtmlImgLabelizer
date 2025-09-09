@@ -508,5 +508,155 @@
         "y1": 458
       }
     ]
+  },
+  {
+    "imgName": "31.png",
+    "width": 324,
+    "height": 225,
+    "md5": "39360e718ecf41aff03139888dc313d8",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 2,
+        "y0": 18,
+        "x1": 320,
+        "y1": 217
+      }
+    ]
+  },
+  {
+    "imgName": "32.png",
+    "width": 276,
+    "height": 251,
+    "md5": "f1e93745303c9dab04840096a9b38ec8",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 4,
+        "y0": 6,
+        "x1": 244,
+        "y1": 234
+      }
+    ]
+  },
+  {
+    "imgName": "33.png",
+    "width": 253,
+    "height": 289,
+    "md5": "61a7329cebd045a55009fe09e6a713a5",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 10,
+        "y0": 15,
+        "x1": 248,
+        "y1": 276
+      }
+    ]
+  },
+  {
+    "imgName": "34.png",
+    "width": 275,
+    "height": 265,
+    "md5": "36bdf85ca52df511d1be7ebf1935dc57",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 2,
+        "y0": 1,
+        "x1": 225,
+        "y1": 265
+      }
+    ]
+  },
+  {
+    "imgName": "38.png",
+    "width": 657,
+    "height": 755,
+    "md5": "2173eca204b391ccd66514a3fded5519",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 9,
+        "y0": 72,
+        "x1": 590,
+        "y1": 657
+      }
+    ]
+  },
+  {
+    "imgName": "40.png",
+    "width": 667,
+    "height": 726,
+    "md5": "eb8f8e40cc602aa60c21ffb0738bba82",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 8,
+        "y0": 31,
+        "x1": 667,
+        "y1": 628
+      }
+    ]
+  },
+  {
+    "imgName": "35.png",
+    "width": 658,
+    "height": 687,
+    "md5": "f8ae3aa7fc68a9548a9f8e9935da8b58",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 3,
+        "y0": 7,
+        "x1": 644,
+        "y1": 648
+      }
+    ]
+  },
+  {
+    "imgName": "39.png",
+    "width": 637,
+    "height": 593,
+    "md5": "a3749d077fe011384db9b08d62733eec",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 36,
+        "y0": 237,
+        "x1": 515,
+        "y1": 423
+      }
+    ]
+  },
+  {
+    "imgName": "36.png",
+    "width": 662,
+    "height": 708,
+    "md5": "a7a74ede611bc38452a63885c283cc60",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 6,
+        "y0": 17,
+        "x1": 647,
+        "y1": 666
+      }
+    ]
+  },
+  {
+    "imgName": "37.png",
+    "width": 667,
+    "height": 762,
+    "md5": "05f408267bf37047607109df539544e0",
+    "labels": [
+      {
+        "name": "banana",
+        "x0": 6,
+        "y0": 54,
+        "x1": 667,
+        "y1": 672
+      }
+    ]
   }
 ]
