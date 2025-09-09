@@ -46,6 +46,14 @@ conda remove --name HtmlImgLabelizer --all
 
 Install the required Python packages using pip:
 
+With CUDA 12.1 support:
+```bash
+pip install torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121
+pip install ultralytics==8.3.191
+pip install jupyterlab==4.4.6
+```
+
+With CPU:
 ```bash
 pip install ultralytics==8.3.191
 pip install jupyterlab==4.4.6
