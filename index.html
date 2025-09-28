@@ -29,8 +29,15 @@
 <body>
     <div id="app">
         <div>
-            <h1>HtmlImgLabelizer</h1>
+            <h1>
+                HtmlImgLabelizer
+                <div v-if="currentLabelName" style="display:inline"
+                    :style="{backgroundColor:getLabelColor(currentLabelName)}">
+                    {{currentLabelName}}</div>
+            </h1>
             <input type="file" multiple @change="onFileBtnFilesChanged">
+            <br>
+            <textarea v-model="classesText" @change="syncClasses"></textarea>
             <input type="button" value="Export yolo labels" @click="exportZip">
             <hr>
 
@@ -60,7 +67,8 @@
                     currentLabelName: null,
                     previewImageIdx: null,
                     previewBox: null,  // { index, x0, y0, x1, y1, rect, canvas }
-                    classes: ["apple", "banana"],
+                    classesText: "apple\nbanana",
+                    classes: [],
                     colors: [
                         "red",
                         "orange",
@@ -69,10 +77,20 @@
                         "blue",
                         "indigo",
                         "violet"
-                    ]
+                    ],
+                    defaultColor: "gray"
                 }
             },
             methods: {
+                syncClasses() {
+                    this.classes = this.classesText
+                        .split("\n")
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                    this.currentLabelName = null;
+
+                    this.images.forEach((img, idx) => this.drawLabels(idx));
+                },
                 onFileBtnFilesChanged(event) {
                     const files = event.target.files;
                     this.addImages(files);
@@ -126,7 +144,7 @@
                     }
                 },
                 getLabelColor(labelName) {
-                    return this.colors[this.classes.indexOf(labelName) % this.colors.length];
+                    return this.colors[this.classes.indexOf(labelName) % this.colors.length] ?? this.defaultColor;
                 },
                 drawPreview(index, box) {
                     const canvas = this.$refs["canvasPreview" + index][0];
@@ -202,8 +220,13 @@
                     this.drawLabels(index);
                 },
                 handleKey(event) {
-                    if (event.key === "1") this.currentLabelName = "apple";
-                    if (event.key === "2") this.currentLabelName = "banana";
+                    const ascii = event.key.charCodeAt(0);
+                    if (ascii >= 49 && ascii <= 57) { // "1" to "9"
+                        const classIdx = ascii - 49;
+                        this.currentLabelName = classIdx < this.classes.length
+                            ? this.classes[classIdx]
+                            : null;
+                    }
                 },
                 async exportZip() {
                     const zip = new JSZip();
@@ -239,6 +262,7 @@
                 window.addEventListener("keydown", this.handleKey);
                 window.addEventListener("mousemove", this.updatePreview);
                 window.addEventListener("mouseup", this.endDraw);
+                this.syncClasses();
             },
             beforeUnmount() {
                 window.removeEventListener("keydown", this.handleKey);
