@@ -31,7 +31,7 @@
         <div>
             <h1>HtmlImgLabelizer</h1>
             <input type="file" multiple @change="onFileBtnFilesChanged">
-            <button @click="exportZip">Export yolo labels</button>
+            <input type="button" value="Export yolo labels" @click="exportZip">
             <hr>
 
             <div v-for="(img, index) in images" :key="index" class="image-container">
