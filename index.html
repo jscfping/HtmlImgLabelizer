@@ -8,10 +8,63 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
     <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background: #f7f7f7;
+        }
+
+        .topPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: aliceblue;
+            border-bottom: 1px solid #ddd;
+            padding: 15px 25px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+        }
+
+        .topPanel h1 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            display: inline-block;
+        }
+
+        .topPanel a {
+            color: #007acc;
+            text-decoration: none;
+        }
+
+        .topPanel a:hover {
+            text-decoration: underline;
+        }
+
+        .divClasses {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .divClasses textarea {
+            width: 200px;
+            height: 60px;
+            resize: vertical;
+            font-size: 14px;
+            font-family: monospace;
+        }
+
         .image-container {
             display: flex;
             align-items: center;
-            margin: 20px 0;
+            background: #fff;
+            margin: 25px 0;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #ddd;
         }
 
         .image-wrapper {
@@ -22,6 +75,29 @@
         .image-info {
             margin-left: 20px;
             font-size: 14px;
+            color: #333;
+        }
+
+        #app {
+            padding-top: 180px;
+            max-width: 1200px;
+            padding-left: 40px;
+            background: #f7f7f7;
+        }
+
+        input[type="file"],
+        input[type="button"] {
+            font-size: 14px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: #fafafa;
+            cursor: pointer;
+        }
+
+        input[type="button"]:hover {
+            background-color: #e6f0ff;
+            border-color: #007acc;
         }
     </style>
 </head>
@@ -29,24 +105,33 @@
 <body>
     <div id="app">
         <div>
-            <h1>
-                <a href="https://github.com/jscfping/HtmlImgLabelizer">HtmlImgLabelizer</a>
-                <div v-if="currentLabelName" style="display:inline"
-                    :style="{backgroundColor:getLabelColor(currentLabelName)}">
-                    {{currentLabelName}}</div>
-            </h1>
-            <input type="file" multiple @change="onFileBtnFilesChanged">
+            <div class="topPanel">
+                <h1>
+                    <a href="https://github.com/jscfping/HtmlImgLabelizer">HtmlImgLabelizer</a>
+                </h1>
+                <div>
+                    Select images to label:
+                    <input type="file" multiple @change="onFileBtnFilesChanged">
+                </div>
+                <div class="divClasses">
+                    <textarea v-model="classesText" @change="syncClasses"></textarea>
+                    <div>
+                        Press the number key to select a label
+                        <div v-if="currentLabelName" style="display:inline"
+                            :style="{backgroundColor:getLabelColor(currentLabelName)}">
+                            {{currentLabelName}}
+                        </div>
+                    </div>
+                </div>
+                <input type="button" value="Export yolo labels" @click="exportZip">
+            </div>
+
             <br>
-            <textarea v-model="classesText" @change="syncClasses"></textarea>
-            <input type="button" value="Export yolo labels" @click="exportZip">
-            <div>Press the number key to select a label.</div>
-            <hr>
+            <br>
 
             <div v-for="(img, index) in images" :key="index" class="image-container">
                 <div class="image-wrapper">
-
                     <canvas :ref="'canvasResult'+index" :width="img.width" :height="img.height"></canvas>
-
                     <canvas :ref="'canvasPreview'+index" :width="img.width" :height="img.height"
                         style="position: absolute; top:0; left:0;" @mousedown="startPreview($event, index)"></canvas>
                 </div>
