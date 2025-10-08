@@ -39,6 +39,7 @@
             <br>
             <textarea v-model="classesText" @change="syncClasses"></textarea>
             <input type="button" value="Export yolo labels" @click="exportZip">
+            <div>Press the number key to select a label.</div>
             <hr>
 
             <div v-for="(img, index) in images" :key="index" class="image-container">
