@@ -156,13 +156,16 @@
                     classesText: "apple\nbanana",
                     classes: [],
                     colors: [
-                        "red",
-                        "orange",
-                        "yellow",
-                        "green",
-                        "blue",
-                        "indigo",
-                        "violet"
+                        "hsl(0,100%,60%)",
+                        "hsl(36,100%,60%)",
+                        "hsl(72,100%,60%)",
+                        "hsl(108,100%,60%)",
+                        "hsl(144,100%,60%)",
+                        "hsl(180,100%,60%)",
+                        "hsl(216,100%,60%)",
+                        "hsl(252,100%,60%)",
+                        "hsl(288,100%,60%)",
+                        "hsl(324,100%,60%)"
                     ],
                     defaultColor: "gray"
                 }
@@ -312,6 +315,10 @@
                         this.currentLabelName = classIdx < this.classes.length
                             ? this.classes[classIdx]
                             : null;
+                    }
+
+                    if (ascii === 48) {
+                        this.currentLabelName = this.classes[9]
                     }
                 },
                 async exportZip() {
